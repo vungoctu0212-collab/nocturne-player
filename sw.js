@@ -1,0 +1,5 @@
+const CACHE = "nocturne-shell-v2";
+const CORE = ["./", "./index.html", "./style.css", "./app.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png"];
+self.addEventListener("install", event => event.waitUntil((async () => { const cache = await caches.open(CACHE); await cache.addAll(CORE); await self.skipWaiting(); })()));
+self.addEventListener("activate", event => event.waitUntil((async () => { const keys = await caches.keys(); await Promise.all(keys.filter(k => k.startsWith("nocturne-shell-") && k !== CACHE).map(k => caches.delete(k))); await self.clients.claim(); })()));
+self.addEventListener("fetch", event => { const req = event.request; if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return; event.respondWith((async () => { const hit = await caches.match(req); if (hit) return hit; try { const res = await fetch(req); if (res && res.ok && res.type === "basic") { const cache = await caches.open(CACHE); cache.put(req, res.clone()); } return res; } catch (e) { if (req.mode === "navigate") return caches.match("./index.html"); throw e; } })()); });
